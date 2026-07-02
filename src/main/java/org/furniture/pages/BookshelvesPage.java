@@ -1,13 +1,13 @@
 package org.furniture.pages;
 
 import org.openqa.selenium.*;
-import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import utils.LoggerManager;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 
 public class BookshelvesPage {
@@ -44,10 +44,6 @@ public class BookshelvesPage {
     @FindBy(xpath = "//button[.//text()='Apply' or contains(.,'Apply')]")
     WebElement applyFilterBtn;
 
-    // Product Count
-    @FindBy(xpath = "//span[contains(.,'Products') and contains(.,'0')]")
-    WebElement productsCount;
-
     // Bookshelf names
     @FindBy(xpath = "//h2[contains(text(),'Bookshelf')]")
     java.util.List<WebElement> bookshelfNames;
@@ -56,20 +52,17 @@ public class BookshelvesPage {
     @FindBy(xpath ="//div[@role='link']//div[contains(text(),'₹')]")
     java.util.List<WebElement> bookshelfPrices;
 
-    //First Bookshelf
-    @FindBy(xpath = "\"(//div[@role='link'])[1]\"")
-    WebElement firstBookshelf;
+    @FindBy(xpath = "//div[@aria-label='Sort By filter']")
+    WebElement sortBy;
 
-    @FindBy(xpath = "(//div[@role='link'])[1]")
-    WebElement firstProductCard;
+    @FindBy(xpath = "//div[contains(text(),'Discount High to Low')]")
+    WebElement discountHighToLow;
 
-    //Add to cart Button
-    @FindBy(css = "button[data-testid='pdp-add-to-cart-button']")
-    WebElement addToCartBtn;
+    @FindBy(xpath = "//h2[contains(@class,'XxwSy')]")
+    List<WebElement> productNames;
 
-    //Cart Button
-    @FindBy(xpath = "//button[contains(text(),'Go to Cart')]")
-    WebElement goToCartBtn;
+    @FindBy(xpath = "//div[@role='link']")
+    List<WebElement> productCards;
 
     public void searchBookshelves() {
         LoggerManager.info("Waiting for search box");
@@ -153,7 +146,7 @@ public class BookshelvesPage {
         LoggerManager.info("Clicking Apply Filter button");
         WebElement applyBtn = wait.until(
                 ExpectedConditions.elementToBeClickable(
-                        By.xpath("//button[@class='zTzmw undefined']")
+                        By.xpath("//button[contains(.,'Apply Filter')]")
                 )
         );
         ((JavascriptExecutor) driver)
@@ -229,122 +222,132 @@ public class BookshelvesPage {
     }
 
     public void switchToProductTab() {
-
         String parent = driver.getWindowHandle();
-
         wait.until(driver ->
                 driver.getWindowHandles().size() > 1);
-
         for (String handle : driver.getWindowHandles()) {
-
             if (!handle.equals(parent)) {
-
                 driver.switchTo().window(handle);
                 break;
             }
         }
-
         LoggerManager.info("Switched to Product tab");
     }
 
-    public void addProductToCart() throws InterruptedException {
+    public void selectPrimaryMaterialEngineeredWood() {
+        LoggerManager.info("Expanding Primary Material");
+        WebElement primaryMaterial = wait.until(
+                ExpectedConditions.elementToBeClickable(
+                        By.xpath("//div[@role='button' and @aria-label='Primary Material']")
+                ));
+        ((JavascriptExecutor) driver)
+                .executeScript("arguments[0].click();", primaryMaterial);
 
-        By addToCart = By.cssSelector(
-                "button[data-testid='pdp-add-to-cart-button']"
+        LoggerManager.info("Selecting Engineered Wood under Primary Material");
+        WebElement engineeredWood = wait.until(
+                ExpectedConditions.elementToBeClickable(
+                        By.xpath("(//div[text()='Engineered Wood'])[1]")
+                ));
+        ((JavascriptExecutor) driver)
+                .executeScript("arguments[0].click();", engineeredWood);
+    }
+
+    public void selectTableTopMaterialEngineeredWood() {
+
+        LoggerManager.info("Scrolling to Table Top Material");
+        WebElement tableTopMaterial = wait.until(
+                ExpectedConditions.visibilityOfElementLocated(
+                        By.xpath("//div[@role='button' and @aria-label='Table Top Material']")
+                ));
+        ((JavascriptExecutor) driver)
+                .executeScript("arguments[0].scrollIntoView(true);",
+                        tableTopMaterial);
+        ((JavascriptExecutor) driver)
+                .executeScript("arguments[0].click();",
+                        tableTopMaterial);
+        LoggerManager.info("Selecting Engineered Wood under Table Top Material");
+        WebElement engineeredWood = wait.until(
+                ExpectedConditions.elementToBeClickable(
+                        By.xpath("(//div[text()='Engineered Wood'])[2]")
+                ));
+        ((JavascriptExecutor) driver)
+                .executeScript("arguments[0].click();",
+                        engineeredWood);
+    }
+
+    public int getProductsCountAfterMaterialFilters() {
+
+        WebElement countElement = wait.until(
+                ExpectedConditions.visibilityOfElementLocated(
+                        By.xpath("//h1[contains(text(),'Bookshelves')]/following-sibling::span")
+                )
         );
+        wait.until(driver -> {
+            String countText = countElement.getText()
+                    .replaceAll("[^0-9]", "");
 
-        WebElement button =
-                wait.until(
-                        ExpectedConditions.presenceOfElementLocated(
-                                addToCart));
-
-        ((JavascriptExecutor) driver)
-                .executeScript(
-                        "arguments[0].scrollIntoView(true)",
-                        button);
-
-        Thread.sleep(2000);
-
-        ((JavascriptExecutor) driver)
-                .executeScript(
-                        "arguments[0].click();",
-                        button);
-
+            return !countText.isEmpty()
+                    && Integer.parseInt(countText) < 639;
+        });
+        String countText = countElement.getText();
         LoggerManager.info(
-                "Clicked Add To Cart");
+                "Filtered Products Count : " + countText);
+        return Integer.parseInt(
+                countText.replaceAll("[^0-9]", ""));
     }
 
-    public void openCart() {
+    public void sortByDiscountHighToLow() {
 
-        By goToCart = By.xpath(
-                "//button[contains(text(),'Go to Cart')]");
-        wait.until(
-                ExpectedConditions.elementToBeClickable(goToCart)
-        ).click();
-        LoggerManager.info("Cart opened");
+        LoggerManager.info("Clicking Sort By");
+        wait.until(ExpectedConditions.elementToBeClickable(sortBy))
+                .click();
+
+        LoggerManager.info("Selecting Discount High To Low");
+        wait.until(ExpectedConditions.elementToBeClickable(discountHighToLow))
+                .click();
+
+        LoggerManager.info("Discount sorting applied");
+
+        wait.until(ExpectedConditions.visibilityOfAllElements(productCards));
     }
 
-    public boolean isProductPresentInCart(String productName) {
+    public void loadTwentyProducts() {
 
-        By cartItem = By.xpath("//*[contains(text(),\""
-                + productName +
-                        "\")]");
-        try {
-            wait.until(
-                    ExpectedConditions.visibilityOfElementLocated(cartItem));
-            return true;
-        } catch (Exception e) {
-            return false;
+        JavascriptExecutor js = (JavascriptExecutor) driver;
+        while (productNames.size() < 20) {
+            int currentCount = productNames.size();
+            js.executeScript("window.scrollBy(0,1000)");
+            wait.until(driver ->
+                    productNames.size() > currentCount || productNames.size() >= 20);
         }
+        LoggerManager.info("Minimum 20 products loaded");
     }
 
-    public void clickMoreProductDetails() {
+    public List<String[]> getTopTwentyProductsWithDiscounts() {
 
-        Actions actions = new Actions(driver);
-
-        for (int i = 0; i < 10; i++) {
-
-            actions.sendKeys(Keys.PAGE_DOWN).perform();
-
+        wait.until(ExpectedConditions.visibilityOfAllElements(productCards));
+        List<String[]> productData = new ArrayList<>();
+        int count = Math.min(20, productCards.size());
+        for (int i = 0; i < count; i++) {
+            WebElement card = productCards.get(i);
             try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-
-            List<WebElement> elements = driver.findElements(
-                    By.xpath("//button[contains(.,'More Product Details')]"));
-
-            if (!elements.isEmpty()) {
-
-                elements.get(0).click();
-
-                LoggerManager.info(
-                        "Clicked More Product Details");
-
-                return;
+                String name = card.findElement(
+                                By.xpath(".//h2[contains(@class,'XxwSy')]")).getText();
+                String discount = "N/A";
+                List<WebElement> discountElements = card.findElements(
+                                By.xpath(".//span[contains(text(),'OFF')]"));
+                if (!discountElements.isEmpty()) {
+                    discount = discountElements.get(0).getText();
+                }
+                productData.add(new String[]{name, discount});
+            } catch (Exception e) {
+                LoggerManager.error(
+                        "Unable to extract product details");
             }
         }
-
-        throw new NoSuchElementException(
-                "More Product Details not found");
+        LoggerManager.info("Extracted " + productData.size() + " products with discounts");
+        return productData;
     }
 
-    public boolean isProductDescriptionVisible() {
 
-        try {
-
-            WebElement description = wait.until(
-                    ExpectedConditions.visibilityOfElementLocated(
-                            By.xpath("//*[contains(text(),'Product Details')]")
-                    )
-            );
-
-            return description.isDisplayed();
-
-        } catch (Exception e) {
-
-            return false;
-        }
-    }
 }
